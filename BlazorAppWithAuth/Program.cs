@@ -20,6 +20,9 @@ builder.Services.AddServerSideBlazor().AddCircuitOptions(x => x.DetailedErrors =
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
 builder.Services.AddHttpContextAccessor();
 
+//**************************************
+// Register our 3 custom dependencies...
+//**************************************
 builder.Services.AddScoped<UserContext>();
 builder.Services.AddScoped<WrapperService>();
 builder.Services.AddScoped<WrapperService2>();

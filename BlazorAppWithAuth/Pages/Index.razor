@@ -10,22 +10,61 @@
 
 <h1>Testing dependencies</h1>
 
+<h3>Failing method</h3>
+
 <p>
 	Clicking the first button will fail because when the SignalR connection is made, there's no
 	HttpContext, so WrapperService1 cannot be constructed.
 </p>
 
 <p>
+	This method attempts to use the Wrapper service which has the ClaimsPrincipal constructed
+	as a cross-cutting concern via dependency injection.
+</p>
+
+<pre>
+void HandleClick1()
+{
+	try
+	{
+		var result = _Wrapper.UserHasSpecialAccess();
+		_results.Add($"HandleClick1 -> {result}");			
+	}
+	catch (Exception ex)
+	{
+		_error = ex.ToString();
+	}
+
+}
+</pre>
+
+<h3>Successful method</h3>
+
+<p>
 	The second button succeeds because the ClaimsPrincipal is stored locally on the initial request
-	and then passed in to services as required.
+	and then passed in to services as required. This doesn't feel like a great way to build scalable
+	software. I'm hoping there's a way to construct a <code>ClaimsPrincipal</code> via dependency injection 
+	so that the cross-cutting concerns can be managed more efficiently.
 </p>
 
-<p>
+<pre>
+void HandleClick2()
+{
+	if(_principal is not null)
+	{
+		var context = new UserContext(_principal);
+		var result = _Wrapper2.UserHasSpecialAccess(context);
+		_results.Add($"HandleClick2 -> {result}");
+	}
+}
+</pre>
 
-</p>
 
 <p>
-	<strong>Note: <em>Log in</em> to get a 'True' result.</strong>
+	<strong>
+		Note: Register for an account and then login to run the demo. Make sure you verify 
+		your account when you register!!
+	</strong>
 </p>
 
 <div class="my-4">
