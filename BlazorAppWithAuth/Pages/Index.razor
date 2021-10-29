@@ -1,0 +1,98 @@
+﻿@page "/"
+@using BlazorAppWithAuth.Services
+@using System.Security.Claims
+@inject WrapperService _Wrapper
+@inject WrapperService2 _Wrapper2
+@inject AuthenticationStateProvider GetAuthenticationStateAsync
+
+
+<PageTitle>Index</PageTitle>
+
+<h1>Testing dependencies</h1>
+
+<p>
+	Clicking the first button will fail because when the SignalR connection is made, there's no
+	HttpContext, so WrapperService1 cannot be constructed.
+</p>
+
+<p>
+	The second button succeeds because the ClaimsPrincipal is stored locally on the initial request
+	and then passed in to services as required.
+</p>
+
+<p>
+
+</p>
+
+<p>
+	<strong>Note: <em>Log in</em> to get a 'True' result.</strong>
+</p>
+
+<div class="my-4">
+	<button @onclick="HandleClick1">Check 1</button>
+	<button @onclick="HandleClick2">Check 2</button>
+</div>
+
+<hr />
+
+@if(_results.Any()) 
+{
+	<p class="bg-info p-4 mb-5">
+		<ul>
+			@foreach(var result in _results)
+			{
+				<li>Result: @result</li>
+			}
+		</ul>
+		
+	</p>
+}
+
+@if(!string.IsNullOrEmpty(_error))
+{
+	<p class="bg-warning text-danger p-4">
+		@_error
+	</p>
+}
+
+
+
+
+@code 
+{
+	[Parameter] public ClaimsPrincipal User { get; set; }
+
+	string _error { get; set; } = "";
+	public List<string> _results { get; set; } = new();
+	ClaimsPrincipal? _principal { get; set; }
+
+	protected async override Task OnInitializedAsync()
+	{
+		var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
+		_principal = authstate.User;
+	}
+
+	void HandleClick1()
+	{
+		try
+		{
+			var result = _Wrapper.UserHasSpecialAccess();
+			_results.Add($"HandleClick1 -> {result}"); // fails 😔			
+		}
+		catch (Exception ex)
+		{
+			_error = ex.ToString();
+		}
+
+	}
+
+	void HandleClick2()
+	{
+		if(_principal is not null)
+		{
+			var context = new UserContext(_principal);
+			var result = _Wrapper2.UserHasSpecialAccess(context);
+			_results.Add($"HandleClick2 -> {result}"); // succeeds
+		}
+	}
+}
