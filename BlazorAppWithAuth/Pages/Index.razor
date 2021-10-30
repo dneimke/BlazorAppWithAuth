@@ -1,8 +1,9 @@
 ﻿@page "/"
 @using BlazorAppWithAuth.Services
 @using System.Security.Claims
-@inject WrapperService _Wrapper
+@inject WrapperService1 _Wrapper
 @inject WrapperService2 _Wrapper2
+@inject WrapperService3 _Wrapper3
 @inject AuthenticationStateProvider GetAuthenticationStateAsync
 
 
@@ -10,55 +11,77 @@
 
 <h1>Testing dependencies</h1>
 
-<h3>Failing method</h3>
+<h3>Button 1 - Fails. HttpContext not supported in Blazor callbacks</h3>
 
 <p>
-	Clicking the first button will fail because when the SignalR connection is made, there's no
-	HttpContext, so WrapperService1 cannot be constructed.
-</p>
-
-<p>
-	This method attempts to use the Wrapper service which has the ClaimsPrincipal constructed
-	as a cross-cutting concern via dependency injection.
+	This method attempts to use the Wrapper service which depends on HttpContext to access a 
+	ClaimsPrincipal via dependency injection. It fails on the callback because SignalR connections
+	don't have a corresponding HttpContext.
 </p>
 
 <pre>
-void HandleClick1()
+public class WrapperService1
 {
-	try
-	{
-		var result = _Wrapper.UserHasSpecialAccess();
-		_results.Add($"HandleClick1 -> {result}");			
-	}
-	catch (Exception ex)
-	{
-		_error = ex.ToString();
-	}
+    IHttpContextAccessor _httpContextAccessor;
 
+    public WrapperService1(IHttpContextAccessor httpContext)
+    {
+        _httpContextAccessor = httpContext;
+    }
+
+    public bool UserHasSpecialAccess()
+    {
+        var principal = _httpContextAccessor.HttpContext.User.Identity;
+        return principal.IsAuthenticated;
+    }
 }
 </pre>
 
-<h3>Successful method</h3>
+<h3>Successful - but requires dependencies to be passed in to services</h3>
 
 <p>
-	The second button succeeds because the ClaimsPrincipal is stored locally on the initial request
-	and then passed in to services as required. This doesn't feel like a great way to build scalable
-	software. I'm hoping there's a way to construct a <code>ClaimsPrincipal</code> via dependency injection 
+	Succeeds but this doesn't feel like a great way to build scalable software. 
+	I'm hoping there's a way to construct a <code>ClaimsPrincipal</code> via dependency injection 
 	so that the cross-cutting concerns can be managed more efficiently.
 </p>
 
 <pre>
-void HandleClick2()
+// WrapperService2 - UserContext passed in to method
+public class WrapperService2
 {
-	if(_principal is not null)
-	{
-		var context = new UserContext(_principal);
-		var result = _Wrapper2.UserHasSpecialAccess(context);
-		_results.Add($"HandleClick2 -> {result}");
-	}
+    public bool UserHasSpecialAccess(ClaimsPrincipal principal)
+    {
+        return principal.Identity.IsAuthenticated;
+    }
 }
 </pre>
 
+<h3>Successful - but uses AuthenticationStateProvider directly as a dependency service</h3>
+
+<p>
+	Succeeds but I don't like this approach because it relies on the <code>AuthenticationStateProvider</code> 
+	service to be used in the middle-tier... which I don't think is encouraged.
+</p>
+
+<pre>
+// WrapperService3 - constructed with AuthenticationStateProvider
+
+private readonly AuthenticationStateProvider _provider;
+
+public WrapperService3(AuthenticationStateProvider provider)
+{
+    _provider = provider;
+}
+
+public async Task&lt;bool> UserHasSpecialAccess()
+{
+    var principal = await _provider.GetAuthenticationStateAsync();
+    if (principal is null)
+        return false;
+
+    return principal.User.Identity.IsAuthenticated;
+}
+</pre>
 
 <p>
 	<strong>
@@ -70,6 +93,7 @@ void HandleClick2()
 <div class="my-4">
 	<button @onclick="HandleClick1">Check 1</button>
 	<button @onclick="HandleClick2">Check 2</button>
+	<button @onclick="HandleClick3">Check 3</button>
 </div>
 
 <hr />
@@ -129,9 +153,22 @@ void HandleClick2()
 	{
 		if(_principal is not null)
 		{
-			var context = new UserContext(_principal);
-			var result = _Wrapper2.UserHasSpecialAccess(context);
+			var result = _Wrapper2.UserHasSpecialAccess(_principal);
 			_results.Add($"HandleClick2 -> {result}"); // succeeds
 		}
+	}
+
+	async Task HandleClick3()
+	{
+		try
+		{
+			var result = await _Wrapper3.UserHasSpecialAccess();
+			_results.Add($"HandleClick1 -> {result}");	// succeeds		
+		}
+		catch (Exception ex)
+		{
+			_error = ex.ToString();
+		}
+
 	}
 }

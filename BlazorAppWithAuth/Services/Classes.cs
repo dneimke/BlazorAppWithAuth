@@ -1,55 +1,49 @@
-﻿using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Components.Authorization;
+using System.Security.Claims;
 
 namespace BlazorAppWithAuth.Services
 {
-    public class UserContext
+
+public class WrapperService1
+{
+    IHttpContextAccessor _httpContextAccessor;
+
+    public WrapperService1(IHttpContextAccessor httpContext)
     {
-        HttpContext _httpContext;
-        ClaimsPrincipal _principal;
-
-        public UserContext(IHttpContextAccessor httpContext) => _httpContext = httpContext.HttpContext;
-        public UserContext(ClaimsPrincipal principal) => _principal = principal;
-        
-        public bool IsAuthenticated {
-            get
-			{
-                if (_principal is null)
-                {
-                    _principal = _httpContext.User;
-
-                }
-
-                return _principal.Identity.IsAuthenticated;
-            }
-        }
+        _httpContextAccessor = httpContext;
     }
 
-
-    public class WrapperService
+    public bool UserHasSpecialAccess()
     {
-        UserContext _userContext;
-
-        public WrapperService(UserContext context)
-        {
-            _userContext = context;
-        }
-
-        public bool UserHasSpecialAccess()
-        {
-            return _userContext.IsAuthenticated;
-        }
+        var principal = _httpContextAccessor.HttpContext.User.Identity;
+        return principal.IsAuthenticated;
     }
+}
 
     public class WrapperService2
     {
-        public WrapperService2()
+        public bool UserHasSpecialAccess(ClaimsPrincipal principal)
         {
-           
+            return principal.Identity.IsAuthenticated;
+        }
+    }
+
+    public class WrapperService3
+    {
+        private readonly AuthenticationStateProvider _provider;
+
+        public WrapperService3(AuthenticationStateProvider provider)
+        {
+            _provider = provider;
         }
 
-        public bool UserHasSpecialAccess(UserContext context)
+        public async Task<bool> UserHasSpecialAccess()
         {
-            return context.IsAuthenticated;
+            var principal = await _provider.GetAuthenticationStateAsync();
+            if (principal is null)
+                return false;
+
+            return principal.User.Identity.IsAuthenticated;
         }
     }
 }

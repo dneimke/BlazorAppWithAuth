@@ -21,11 +21,11 @@ builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuth
 builder.Services.AddHttpContextAccessor();
 
 //**************************************
-// Register our 3 custom dependencies...
+// Register our custom dependencies...
 //**************************************
-builder.Services.AddScoped<UserContext>();
-builder.Services.AddScoped<WrapperService>();
+builder.Services.AddScoped<WrapperService1>();
 builder.Services.AddScoped<WrapperService2>();
+builder.Services.AddScoped<WrapperService3>();
 
 var app = builder.Build();
 
