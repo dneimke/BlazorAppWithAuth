@@ -37,7 +37,7 @@ public class WrapperService1
 }
 </pre>
 
-<h3>Successful - but requires dependencies to be passed in to services</h3>
+<h3>Button 2 - Succeeds, but requires calling code to pass Principal to service</h3>
 
 <p>
 	Succeeds but this doesn't feel like a great way to build scalable software. 
@@ -56,7 +56,7 @@ public class WrapperService2
 }
 </pre>
 
-<h3>Successful - but uses AuthenticationStateProvider directly as a dependency service</h3>
+<h3>Button 3 - Succeeds, but AuthenticationStateProvider used in DI</h3>
 
 <p>
 	Succeeds but I don't like this approach because it relies on the <code>AuthenticationStateProvider</code> 
