@@ -1,99 +1,14 @@
 ﻿@page "/"
 @using BlazorAppWithAuth.Services
-@using System.Security.Claims
-@inject WrapperService1 _Wrapper
-@inject WrapperService2 _Wrapper2
-@inject WrapperService3 _Wrapper3
-@inject AuthenticationStateProvider GetAuthenticationStateAsync
+@inject WrapperService _wrapperService
 
 
 <PageTitle>Index</PageTitle>
 
 <h1>Testing dependencies</h1>
 
-<h3>Button 1 - Fails. HttpContext not supported in Blazor callbacks</h3>
-
-<p>
-	This method attempts to use the Wrapper service which depends on HttpContext to access a 
-	ClaimsPrincipal via dependency injection. It fails on the callback because SignalR connections
-	don't have a corresponding HttpContext.
-</p>
-
-<pre>
-public class WrapperService1
-{
-    IHttpContextAccessor _httpContextAccessor;
-
-    public WrapperService1(IHttpContextAccessor httpContext)
-    {
-        _httpContextAccessor = httpContext;
-    }
-
-    public bool UserHasSpecialAccess()
-    {
-        var principal = _httpContextAccessor.HttpContext.User.Identity;
-        return principal.IsAuthenticated;
-    }
-}
-</pre>
-
-<h3>Button 2 - Succeeds, but requires calling code to pass Principal to service</h3>
-
-<p>
-	Succeeds but this doesn't feel like a great way to build scalable software. 
-	I'm hoping there's a way to construct a <code>ClaimsPrincipal</code> via dependency injection 
-	so that the cross-cutting concerns can be managed more efficiently.
-</p>
-
-<pre>
-// WrapperService2 - UserContext passed in to method
-public class WrapperService2
-{
-    public bool UserHasSpecialAccess(ClaimsPrincipal principal)
-    {
-        return principal.Identity.IsAuthenticated;
-    }
-}
-</pre>
-
-<h3>Button 3 - Succeeds, but AuthenticationStateProvider used in DI</h3>
-
-<p>
-	Succeeds but I don't like this approach because it relies on the <code>AuthenticationStateProvider</code> 
-	service to be used in the middle-tier... which I don't think is encouraged.
-</p>
-
-<pre>
-// WrapperService3 - constructed with AuthenticationStateProvider
-
-private readonly AuthenticationStateProvider _provider;
-
-public WrapperService3(AuthenticationStateProvider provider)
-{
-    _provider = provider;
-}
-
-public async Task&lt;bool> UserHasSpecialAccess()
-{
-    var principal = await _provider.GetAuthenticationStateAsync();
-    if (principal is null)
-        return false;
-
-    return principal.User.Identity.IsAuthenticated;
-}
-</pre>
-
-<p>
-	<strong>
-		Note: When you are logge-in, clicking Button 2 will return a `True` result.  You need to register 
-		for an account before loginng it. Make sure you verify your account when you register!!
-	</strong>
-</p>
-
 <div class="my-4">
-	<button @onclick="HandleClick1">Check 1</button>
-	<button @onclick="HandleClick2">Check 2</button>
-	<button @onclick="HandleClick3">Check 3</button>
+	<button @onclick="HandleClick">Call Service</button>
 </div>
 
 <hr />
@@ -119,51 +34,18 @@ public async Task&lt;bool> UserHasSpecialAccess()
 }
 
 
-
-
 @code 
 {
-	[Parameter] public ClaimsPrincipal User { get; set; }
-
 	string _error { get; set; } = "";
 	public List<string> _results { get; set; } = new();
-	ClaimsPrincipal? _principal { get; set; }
 
-	protected async override Task OnInitializedAsync()
-	{
-		var authstate = await GetAuthenticationStateAsync.GetAuthenticationStateAsync();
-		_principal = authstate.User;
-	}
 
-	void HandleClick1()
+	void HandleClick()
 	{
 		try
 		{
-			var result = _Wrapper.UserHasSpecialAccess();
-			_results.Add($"HandleClick1 -> {result}"); // fails 😔			
-		}
-		catch (Exception ex)
-		{
-			_error = ex.ToString();
-		}
-
-	}
-
-	void HandleClick2()
-	{
-		if(_principal is not null)
-		{
-			var result = _Wrapper2.UserHasSpecialAccess(_principal);
-			_results.Add($"HandleClick2 -> {result}"); // succeeds
-		}
-	}
-
-	async Task HandleClick3()
-	{
-		try
-		{
-			var result = await _Wrapper3.UserHasSpecialAccess();
-			_results.Add($"HandleClick1 -> {result}");	// succeeds		
+			var result = _wrapperService.UserHasSpecialAccess();
+			_results.Add($"HandleClick1 -> {result}"); 	
 		}
 		catch (Exception ex)
 		{

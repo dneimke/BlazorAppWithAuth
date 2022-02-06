@@ -1,8 +1,12 @@
 ﻿@page "/"
 @namespace BlazorAppWithAuth.Pages
+
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
     Layout = "_Layout";
+    var state = new AppState();
+    state.IsAuthenticated = HttpContext.User.Identity.IsAuthenticated;
+    state.Username = HttpContext.User.Identity.Name;
 }
 
-<component type="typeof(App)" render-mode="ServerPrerendered" />
+<component type="typeof(App)" param-InitialState="state" render-mode="ServerPrerendered" />

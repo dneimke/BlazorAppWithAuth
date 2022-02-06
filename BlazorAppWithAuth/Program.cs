@@ -23,9 +23,8 @@ builder.Services.AddHttpContextAccessor();
 //**************************************
 // Register our custom dependencies...
 //**************************************
-builder.Services.AddScoped<WrapperService1>();
-builder.Services.AddScoped<WrapperService2>();
-builder.Services.AddScoped<WrapperService3>();
+builder.Services.AddScoped<IdentityInformationService>();
+builder.Services.AddScoped<WrapperService>();
 
 var app = builder.Build();
 
